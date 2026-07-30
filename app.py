@@ -95,6 +95,31 @@ def reset_timer():
 
 def play_bell():
     st.markdown('<div class="bell">🔔</div>', unsafe_allow_html=True)
+    import streamlit.components.v1 as components
+    components.html("""
+    <script>
+    (function() {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      function beep(freq, duration, delay) {
+        setTimeout(function() {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.frequency.value = freq;
+          gain.gain.setValueAtTime(0.45, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
+          osc.start(ctx.currentTime);
+          osc.stop(ctx.currentTime + duration);
+        }, delay);
+      }
+      // Triple bell sound
+      beep(880, 0.35, 0);
+      beep(660, 0.40, 320);
+      beep(990, 0.50, 650);
+    })();
+    </script>
+    """, height=0)
 
 def make_days(images, chunk):
     """Split ordered images into days of size `chunk`."""
