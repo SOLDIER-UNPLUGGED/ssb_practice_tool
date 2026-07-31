@@ -56,6 +56,19 @@ p,li,label,.stMarkdown{font-family:'Roboto Condensed',sans-serif;color:#e8e4d9;}
 section[data-testid="stSidebar"]{background:linear-gradient(180deg,#0a150a,#152515);border-right:2px solid var(--olive);}
 div[data-testid="stImage"]{border:3px solid var(--gold);border-radius:8px;overflow:hidden;}
 .footer{text-align:center;padding:1.3rem;margin-top:2rem;border-top:1px solid var(--olive);color:#777;font-size:0.82rem;}
+
+/* Full screen friendly */
+.block-container {
+    padding-top: 1rem !important;
+    padding-bottom: 1rem !important;
+    max-width: 100% !important;
+}
+header[data-testid="stHeader"] { display: none !important; }
+footer { display: none !important; }
+#MainMenu { visibility: hidden !important; }
+div[data-testid="stToolbar"] { display: none !important; }
+section[data-testid="stSidebar"] { min-width: 220px !important; }
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -88,6 +101,34 @@ def header():
       <div class="by">Created by Ayush Kumar &nbsp;|&nbsp; Exact Real SSB Timing &nbsp;|&nbsp; Free for Every Aspirant</div>
     </div>
     """, unsafe_allow_html=True)
+
+
+def fullscreen_button():
+    import streamlit.components.v1 as components
+    components.html("""
+    <div style="text-align:right;margin:-8px 0 10px 0;">
+      <button id="fsBtn"
+        style="background:#3d5a3d;color:#c9a227;border:2px solid #c9a227;
+               font-family:Oswald,sans-serif;font-size:0.95rem;letter-spacing:1px;
+               padding:6px 16px;border-radius:6px;cursor:pointer;">
+        ⛶ FULL SCREEN
+      </button>
+    </div>
+    <script>
+    const btn = document.getElementById("fsBtn");
+    btn.onclick = function() {
+      const el = window.parent.document.documentElement;
+      if (!window.parent.document.fullscreenElement) {
+        el.requestFullscreen().catch(err => alert("Fullscreen not allowed"));
+        btn.innerText = "⛶ EXIT FULL SCREEN";
+      } else {
+        window.parent.document.exitFullscreen();
+        btn.innerText = "⛶ FULL SCREEN";
+      }
+    };
+    </script>
+    """, height=50)
+
 
 def big_timer(seconds, alert_at=10):
     ph = st.empty()
@@ -175,6 +216,7 @@ with st.sidebar:
     st.markdown('<div style="font-size:0.78rem;color:#888;text-align:center;"><b>SOLDIER UNPLUGGED</b><br>by Ayush Kumar</div>', unsafe_allow_html=True)
 
 header()
+fullscreen_button()
 
 # ═══════════════════════════════════════════════════════════════
 # HOME
