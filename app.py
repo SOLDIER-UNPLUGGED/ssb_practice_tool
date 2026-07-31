@@ -150,7 +150,22 @@ def get_tat():
     return load_tat_images()
 
 with st.sidebar:
-    st.markdown("### 🎖️ NAVIGATION")
+    import base64
+    from pathlib import Path
+    logo_path = Path(__file__).parent / "assets" / "logo.png"
+    if logo_path.exists():
+        with open(logo_path, "rb") as f:
+            logo_b64 = base64.b64encode(f.read()).decode()
+        st.markdown(
+            f'''<div style="text-align:center;margin-bottom:8px;">
+            <img src="data:image/png;base64,{logo_b64}" style="height:42px;">
+            <div style="font-family:Oswald,sans-serif;color:#c9a227;font-size:1.05rem;letter-spacing:1px;margin-top:4px;">NAVIGATION</div>
+            </div>''',
+            unsafe_allow_html=True
+        )
+    else:
+        st.markdown("### 🎖️ NAVIGATION")
+
     nav = st.radio("", ["🏠 Home", "🖼️ PPDT", "📖 TAT", "ℹ️ About"], label_visibility="collapsed")
     st.markdown("---")
     st.markdown("#### 📁 PDFs")
