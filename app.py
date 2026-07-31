@@ -16,7 +16,7 @@ import time
 import math
 from utils.image_utils import load_ppdt_images, load_tat_images, generate_placeholder
 
-st.set_page_config(page_title="Soldier Unplugged | SSB Practice", page_icon="🎖️", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="Soldier Unplugged | SSB Practice", page_icon="assets/logo.png", layout="wide", initial_sidebar_state="expanded")
 
 st.markdown("""
 <style>
@@ -72,9 +72,18 @@ def init():
 init()
 
 def header():
-    st.markdown("""
+    import base64
+    from pathlib import Path
+    logo_path = Path(__file__).parent / "assets" / "logo.png"
+    if logo_path.exists():
+        with open(logo_path, "rb") as f:
+            logo_b64 = base64.b64encode(f.read()).decode()
+        logo_html = f'<img src="data:image/png;base64,{logo_b64}" style="height:52px;vertical-align:middle;margin-right:12px;">'
+    else:
+        logo_html = "🎖️"
+    st.markdown(f"""
     <div class="main-header">
-      <h1>🎖️ SOLDIER UNPLUGGED</h1>
+      <h1>{logo_html} SOLDIER UNPLUGGED</h1>
       <div class="sub">SSB PRACTICE TOOL — PPDT • TAT</div>
       <div class="by">Created by Ayush Kumar &nbsp;|&nbsp; Exact Real SSB Timing &nbsp;|&nbsp; Free for Every Aspirant</div>
     </div>
