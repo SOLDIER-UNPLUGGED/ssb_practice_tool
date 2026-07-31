@@ -57,21 +57,17 @@ section[data-testid="stSidebar"]{background:linear-gradient(180deg,#0a150a,#1525
 div[data-testid="stImage"]{border:3px solid var(--gold);border-radius:8px;overflow:hidden;}
 .footer{text-align:center;padding:1.3rem;margin-top:2rem;border-top:1px solid var(--olive);color:#777;font-size:0.82rem;}
 
-/* More screen space — KEEP left sidebar arrow */
+/* Full screen friendly */
 .block-container {
     padding-top: 1rem !important;
     padding-bottom: 1rem !important;
     max-width: 100% !important;
 }
-#MainMenu { visibility: hidden !important; }
+header[data-testid="stHeader"] { display: none !important; }
 footer { display: none !important; }
+#MainMenu { visibility: hidden !important; }
 div[data-testid="stToolbar"] { display: none !important; }
-[data-testid="stSidebarCollapsedControl"],
-[data-testid="collapsedControl"] {
-    display: flex !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-}
+section[data-testid="stSidebar"] { min-width: 220px !important; }
 
 </style>
 """, unsafe_allow_html=True)
@@ -221,6 +217,7 @@ with st.sidebar:
 
 header()
 fullscreen_button()
+
 # ═══════════════════════════════════════════════════════════════
 # HOME
 # ═══════════════════════════════════════════════════════════════
