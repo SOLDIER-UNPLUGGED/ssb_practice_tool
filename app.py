@@ -57,17 +57,21 @@ section[data-testid="stSidebar"]{background:linear-gradient(180deg,#0a150a,#1525
 div[data-testid="stImage"]{border:3px solid var(--gold);border-radius:8px;overflow:hidden;}
 .footer{text-align:center;padding:1.3rem;margin-top:2rem;border-top:1px solid var(--olive);color:#777;font-size:0.82rem;}
 
-/* Full screen friendly */
+/* More screen space — KEEP left sidebar arrow */
 .block-container {
     padding-top: 1rem !important;
     padding-bottom: 1rem !important;
     max-width: 100% !important;
 }
-header[data-testid="stHeader"] { display: none !important; }
-footer { display: none !important; }
 #MainMenu { visibility: hidden !important; }
+footer { display: none !important; }
 div[data-testid="stToolbar"] { display: none !important; }
-section[data-testid="stSidebar"] { min-width: 220px !important; }
+[data-testid="stSidebarCollapsedControl"],
+[data-testid="collapsedControl"] {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
 
 </style>
 """, unsafe_allow_html=True)
@@ -128,41 +132,6 @@ def fullscreen_button():
     };
     </script>
     """, height=50)
-
-def sidebar_toggle_button():
-    import streamlit.components.v1 as components
-    components.html("""
-    <div style="text-align:right;margin:-4px 0 8px 0;">
-      <button id="sbBtn"
-        style="background:#3d5a3d;color:#c9a227;border:2px solid #c9a227;
-               font-family:Oswald,sans-serif;font-size:0.95rem;letter-spacing:1px;
-               padding:6px 16px;border-radius:6px;cursor:pointer;margin-left:8px;">
-        ☰ NAVIGATION
-      </button>
-    </div>
-    <script>
-    document.getElementById("sbBtn").onclick = function() {
-      const doc = window.parent.document;
-      // Streamlit native sidebar toggle button
-      const btn =
-        doc.querySelector('[data-testid="stSidebarCollapseButton"]') ||
-        doc.querySelector('[data-testid="collapsedControl"]') ||
-        doc.querySelector('button[kind="header"]') ||
-        doc.querySelector('[data-testid="stBaseButton-headerNoPadding"]');
-      if (btn) {
-        btn.click();
-      } else {
-        // fallback: hide/show sidebar section
-        const sidebar = doc.querySelector('section[data-testid="stSidebar"]');
-        if (sidebar) {
-          const hidden = sidebar.style.display === 'none' ||
-                         sidebar.getAttribute('aria-expanded') === 'false';
-          sidebar.style.display = hidden ? 'block' : 'none';
-        }
-      }
-    };
-    </script>
-    """, height=48)
 
 
 def big_timer(seconds, alert_at=10):
@@ -252,8 +221,6 @@ with st.sidebar:
 
 header()
 fullscreen_button()
-sidebar_toggle_button()
-
 # ═══════════════════════════════════════════════════════════════
 # HOME
 # ═══════════════════════════════════════════════════════════════
