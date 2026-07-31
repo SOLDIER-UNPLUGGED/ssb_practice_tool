@@ -182,52 +182,100 @@ components.html("""
   const doc = window.parent.document;
 
   // ===== SIDEBAR ARROW TOGGLE =====
-  if (!doc.getElementById('su-sidebar-toggle')) {
-    const btn = doc.createElement('button');
-    btn.id = 'su-sidebar-toggle';
-    const isCollapsed = !!(doc.querySelector('[data-testid="stSidebarExpandButton"]') || doc.querySelector('[aria-label="Expand sidebar"]'));
-    btn.innerHTML = isCollapsed ? '▶' : '◀';
-    btn.title = isCollapsed ? 'Open Navigation' : 'Close Navigation';
-    btn.style.cssText = `
-      position: fixed;
-      top: 12px;
-      left: 12px;
-      z-index: 999999;
-      background: linear-gradient(180deg, #3d5a3d, #2a402a);
-      color: #c9a227;
-      border: 2px solid #c9a227;
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      font-size: 1.35rem;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 0 14px rgba(201,162,39,0.45);
-      padding: 0;
-      line-height: 1;
-    `;
-    btn.onmouseover = function() { this.style.boxShadow = '0 0 20px rgba(201,162,39,0.7)'; };
-    btn.onmouseout  = function() { this.style.boxShadow = '0 0 14px rgba(201,162,39,0.45)'; };
-    btn.onclick = function() {
-      // Look for both expand and collapse buttons across different Streamlit versions
-      const control = doc.querySelector('[data-testid="collapsedControl"]') ||
-                      doc.querySelector('[data-testid="stSidebarCollapseButton"]') ||
-                      doc.querySelector('[data-testid="stSidebarExpandButton"]') ||
-                      doc.querySelector('[aria-label="Collapse sidebar"]') ||
-                      doc.querySelector('[aria-label="Expand sidebar"]');
-      if (control) control.click();
-      if (btn.innerHTML === '◀') {
-        btn.innerHTML = '▶';
-        btn.title = 'Open Navigation';
-      } else {
-        btn.innerHTML = '◀';
-        btn.title = 'Close Navigation';
+  // Streamlit's own collapse control puts data-testid on a wrapper <div>,
+  // with the real clickable <button> nested inside it. Newer Streamlit
+  // versions also renamed the testid (collapsedControl -> stSidebarCollapseButton).
+  // Clicking the wrapper div does nothing because React's handler lives on the
+  // inner button, so we resolve down to that real button before clicking it.
+  function findRealToggleButton() {
+    const wrapperSelectors = [
+      '[data-testid="stSidebarCollapseButton"]',
+      '[data-testid="collapsedControl"]',
+      '[data-testid="stSidebarNavCollapseButton"]'
+    ];
+    for (const sel of wrapperSelectors) {
+      const wrapper = doc.querySelector(sel);
+      if (wrapper) {
+        return wrapper.tagName === 'BUTTON' ? wrapper : wrapper.querySelector('button');
       }
-    };
-    doc.body.appendChild(btn);
+    }
+    return null;
   }
+
+  function sidebarIsCollapsed() {
+    return !!doc.querySelector('[data-testid="collapsedControl"]');
+  }
+
+  function refreshIcon(btn) {
+    const collapsed = sidebarIsCollapsed();
+    btn.innerHTML = collapsed ? '▶' : '◀';
+    btn.title = collapsed ? 'Open Navigation' : 'Close Navigation';
+  }
+
+  function ensureToggleButton() {
+    let btn = doc.getElementById('su-sidebar-toggle');
+    if (!btn) {
+      btn = doc.createElement('button');
+      btn.id = 'su-sidebar-toggle';
+      btn.style.cssText = `
+        position: fixed;
+        top: 12px;
+        left: 12px;
+        z-index: 999999;
+        background: linear-gradient(180deg, #3d5a3d, #2a402a);
+        color: #c9a227;
+        border: 2px solid #c9a227;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        font-size: 1.35rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 0 14px rgba(201,162,39,0.45);
+        padding: 0;
+        line-height: 1;
+      `;
+      btn.onmouseover = function() { this.style.boxShadow = '0 0 20px rgba(201,162,39,0.7)'; };
+      btn.onmouseout  = function() { this.style.boxShadow = '0 0 14px rgba(201,162,39,0.45)'; };
+      btn.onclick = function(e) {
+        e.preventDefault();
+        const real = findRealToggleButton();
+        if (real) real.click();
+        setTimeout(function() { refreshIcon(btn); }, 200);
+      };
+      doc.body.appendChild(btn);
+    }
+    refreshIcon(btn);
+    return btn;
+  }
+
+  ensureToggleButton();
+
+  // The sidebar may not be mounted yet on first paint (or this script can
+  // fire before Streamlit's own React tree is ready) — retry briefly.
+  let tries = 0;
+  const retryTimer = setInterval(function() {
+    tries++;
+    ensureToggleButton();
+    if (tries > 15) clearInterval(retryTimer);
+  }, 300);
+
+  // Keep our icon in sync if the sidebar is opened/closed via the native
+  // control (or anything else), throttled to once per animation frame so it
+  // doesn't add overhead during the rapid reruns used by the timers.
+  let ticking = false;
+  const observer = new MutationObserver(function() {
+    if (!ticking) {
+      ticking = true;
+      requestAnimationFrame(function() {
+        ensureToggleButton();
+        ticking = false;
+      });
+    }
+  });
+  observer.observe(doc.body, { childList: true, subtree: true });
 
   // ===== FULLSCREEN / EXIT BUTTON =====
   if (!doc.getElementById('su-fs-toggle')) {
