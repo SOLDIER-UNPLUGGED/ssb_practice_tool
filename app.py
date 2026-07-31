@@ -64,7 +64,7 @@ def init():
         "module": None, "phase": "setup", "all_images": [],
         "day_images": [], "pic_index": 0, "sub_phase": None,
         "timer_start": None, "chunk_size": 12, "day_num": 1,
-        "total_days": 1, "pics_in_day": 12,
+        "total_days": 1, "pics_in_day": 12, "img_size_pct": 70,
     }
     for k, v in defaults.items():
         if k not in st.session_state:
@@ -108,6 +108,7 @@ def play_bell():
     <script>
     (function() {
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      if (ctx.state === 'suspended') { ctx.resume().catch(function(){}); }
       function beep(freq, duration, delay) {
         setTimeout(function() {
           const osc = ctx.createOscillator();
@@ -128,6 +129,17 @@ def play_bell():
     })();
     </script>
     """, height=0)
+
+def show_practice_image(img):
+    """Show the current PPDT/TAT picture at the size chosen in the sidebar."""
+    pct = st.session_state.get("img_size_pct", 70)
+    if pct >= 100:
+        st.image(img, use_container_width=True)
+    else:
+        pad = (100 - pct) / 2
+        left, mid, right = st.columns([pad, pct, pad])
+        with mid:
+            st.image(img, use_container_width=True)
 
 def make_days(images, chunk):
     """Split ordered images into days of size `chunk`."""
@@ -170,6 +182,10 @@ with st.sidebar:
     st.markdown("#### 📁 PDFs")
     st.caption("data/ppdt.pdf → PPDT")
     st.caption("data/tat.pdf → TAT")
+    st.markdown("---")
+    st.markdown("#### 🖼️ Picture Size")
+    st.slider("Picture size (%)", 30, 100, step=5, key="img_size_pct", label_visibility="collapsed")
+    st.caption(f"{st.session_state.img_size_pct}% width — chhota/bada karne ke liye slide karo")
     st.markdown("---")
     st.markdown('<div style="font-size:0.78rem;color:#888;text-align:center;"><b>SOLDIER UNPLUGGED</b><br>by Ayush Kumar</div>', unsafe_allow_html=True)
 
@@ -384,6 +400,9 @@ elif nav == "🖼️ PPDT":
     # STEP 1: Setup — choose chunk size → days form
     if st.session_state.phase == "setup":
         total = len(st.session_state.all_images)
+        if total == 0:
+            st.error("⚠️ No PPDT pictures found. Check that **data/ppdt.pdf** exists and contains images.")
+            st.stop()
         st.markdown(f"### PPDT &nbsp;•&nbsp; {total} pictures loaded")
         st.markdown("""
         <div class="instruction-box">
@@ -397,7 +416,7 @@ elif nav == "🖼️ PPDT":
         days = make_days(st.session_state.all_images, chunk)
         st.session_state.total_days = len(days)
         st.info(f"**{len(days)} Days** will be created (each with up to {chunk} picture(s))")
-        if st.button("→ Continue to Day Selection", use_container_width=True):
+        if st.button("→ Continue to Day Selection", use_container_width=True, key="ppdt_continue_to_days"):
             st.session_state.phase = "select_day"
             st.rerun()
 
@@ -422,7 +441,7 @@ elif nav == "🖼️ PPDT":
                     st.session_state.pic_index = 0
                     st.session_state.phase = "instructions"
                     st.rerun()
-        if st.button("← Change pictures per day"):
+        if st.button("← Change pictures per day", key="ppdt_change_chunk"):
             st.session_state.phase = "setup"
             st.rerun()
 
@@ -442,13 +461,13 @@ elif nav == "🖼️ PPDT":
         <p><b>Write on your own paper.</b></p>
         </div>
         """, unsafe_allow_html=True)
-        if st.button("▶ START PPDT — Day " + str(st.session_state.day_num), use_container_width=True):
+        if st.button("▶ START PPDT — Day " + str(st.session_state.day_num), use_container_width=True, key="ppdt_start_day"):
             st.session_state.phase = "running"
             st.session_state.sub_phase = "view"
             st.session_state.pic_index = 0
             reset_timer()
             st.rerun()
-        if st.button("← Back to Day Selection"):
+        if st.button("← Back to Day Selection", key="ppdt_back_to_days"):
             st.session_state.phase = "select_day"
             st.rerun()
 
@@ -462,7 +481,7 @@ elif nav == "🖼️ PPDT":
             st.markdown(f'<div class="phase">DAY {st.session_state.day_num} — PIC {idx+1}/{total_in_day} — OBSERVE 30s</div>', unsafe_allow_html=True)
             st.warning("Look carefully. Do NOT write yet.")
             rem = big_timer(30, 5)
-            st.image(img, use_container_width=True)
+            show_practice_image(img)
             if rem <= 0:
                 st.session_state.sub_phase = "write_box"
                 reset_timer()
@@ -510,11 +529,11 @@ elif nav == "🖼️ PPDT":
         st.success(f"Day {st.session_state.day_num} complete! ({st.session_state.pics_in_day} picture(s) done)")
         c1, c2 = st.columns(2)
         with c1:
-            if st.button("→ Next Day / Select Day", use_container_width=True):
+            if st.button("→ Next Day / Select Day", use_container_width=True, key="ppdt_stop_next"):
                 st.session_state.phase = "select_day"
                 st.rerun()
         with c2:
-            if st.button("← Change setup", use_container_width=True):
+            if st.button("← Change setup", use_container_width=True, key="ppdt_stop_change_setup"):
                 st.session_state.phase = "setup"
                 st.rerun()
 
@@ -530,6 +549,9 @@ elif nav == "📖 TAT":
     # STEP 1: Setup
     if st.session_state.phase == "setup":
         total = len(st.session_state.all_images)
+        if total == 0:
+            st.error("⚠️ No TAT pictures found. Check that **data/tat.pdf** exists and contains images.")
+            st.stop()
         st.markdown(f"### TAT &nbsp;•&nbsp; {total} pictures loaded")
         st.markdown("""
         <div class="instruction-box">
@@ -542,7 +564,7 @@ elif nav == "📖 TAT":
         st.session_state.chunk_size = chunk
         days = make_days(st.session_state.all_images, chunk)
         st.info(f"**{len(days)} Days** will be created")
-        if st.button("→ Continue to Day Selection", use_container_width=True):
+        if st.button("→ Continue to Day Selection", use_container_width=True, key="tat_continue_to_days"):
             st.session_state.phase = "select_day"
             st.rerun()
 
@@ -565,7 +587,7 @@ elif nav == "📖 TAT":
                     st.session_state.pic_index = 0
                     st.session_state.phase = "instructions"
                     st.rerun()
-        if st.button("← Change pictures per day"):
+        if st.button("← Change pictures per day", key="tat_change_chunk"):
             st.session_state.phase = "setup"
             st.rerun()
 
@@ -583,14 +605,14 @@ elif nav == "📖 TAT":
         <p><b>Write on your own paper.</b></p>
         </div>
         """, unsafe_allow_html=True)
-        if st.button(f"▶ START TAT — Day {st.session_state.day_num}", use_container_width=True):
+        if st.button(f"▶ START TAT — Day {st.session_state.day_num}", use_container_width=True, key="tat_start_day"):
             # if exactly 12, make last blank-style optional (keep original image, user knows)
             st.session_state.phase = "running"
             st.session_state.sub_phase = "view"
             st.session_state.pic_index = 0
             reset_timer()
             st.rerun()
-        if st.button("← Back to Day Selection"):
+        if st.button("← Back to Day Selection", key="tat_back_to_days"):
             st.session_state.phase = "select_day"
             st.rerun()
 
@@ -604,7 +626,7 @@ elif nav == "📖 TAT":
             st.markdown(f'<div class="phase">DAY {st.session_state.day_num} — PIC {idx+1}/{total} — OBSERVE 30s</div>', unsafe_allow_html=True)
             st.warning("Look carefully. Do NOT write yet.")
             rem = big_timer(30, 5)
-            st.image(img, use_container_width=True)
+            show_practice_image(img)
             if rem <= 0:
                 st.session_state.sub_phase = "write"
                 reset_timer()
@@ -638,11 +660,11 @@ elif nav == "📖 TAT":
         st.success(f"Day {st.session_state.day_num} complete! ({st.session_state.pics_in_day} pictures done)")
         c1, c2 = st.columns(2)
         with c1:
-            if st.button("→ Next Day / Select Day", use_container_width=True):
+            if st.button("→ Next Day / Select Day", use_container_width=True, key="tat_stop_next"):
                 st.session_state.phase = "select_day"
                 st.rerun()
         with c2:
-            if st.button("← Change setup", use_container_width=True):
+            if st.button("← Change setup", use_container_width=True, key="tat_stop_change_setup"):
                 st.session_state.phase = "setup"
                 st.rerun()
 
