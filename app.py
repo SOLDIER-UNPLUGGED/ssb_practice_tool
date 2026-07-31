@@ -185,7 +185,7 @@ components.html("""
   if (!doc.getElementById('su-sidebar-toggle')) {
     const btn = doc.createElement('button');
     btn.id = 'su-sidebar-toggle';
-    const isCollapsed = !!doc.querySelector('[data-testid="collapsedControl"]');
+    const isCollapsed = !!(doc.querySelector('[data-testid="stSidebarExpandButton"]') || doc.querySelector('[aria-label="Expand sidebar"]'));
     btn.innerHTML = isCollapsed ? '▶' : '◀';
     btn.title = isCollapsed ? 'Open Navigation' : 'Close Navigation';
     btn.style.cssText = `
@@ -211,8 +211,12 @@ components.html("""
     btn.onmouseover = function() { this.style.boxShadow = '0 0 20px rgba(201,162,39,0.7)'; };
     btn.onmouseout  = function() { this.style.boxShadow = '0 0 14px rgba(201,162,39,0.45)'; };
     btn.onclick = function() {
+      // Look for both expand and collapse buttons across different Streamlit versions
       const control = doc.querySelector('[data-testid="collapsedControl"]') ||
-                      doc.querySelector('[data-testid="stSidebarCollapseButton"]');
+                      doc.querySelector('[data-testid="stSidebarCollapseButton"]') ||
+                      doc.querySelector('[data-testid="stSidebarExpandButton"]') ||
+                      doc.querySelector('[aria-label="Collapse sidebar"]') ||
+                      doc.querySelector('[aria-label="Expand sidebar"]');
       if (control) control.click();
       if (btn.innerHTML === '◀') {
         btn.innerHTML = '▶';
