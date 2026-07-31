@@ -1,4 +1,3 @@
-
 """
 SOLDIER UNPLUGGED | SSB Practice Tool
 PPDT + TAT | Exact Real SSB Timing
@@ -106,7 +105,13 @@ def header():
 def fullscreen_button():
     import streamlit.components.v1 as components
     components.html("""
-    <div style="text-align:right;margin:-8px 0 10px 0;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin:-8px 0 10px 0;">
+      <button id="sidebarBtn"
+        style="background:#3d5a3d;color:#c9a227;border:2px solid #c9a227;
+               font-family:Oswald,sans-serif;font-size:0.95rem;letter-spacing:1px;
+               padding:6px 14px;border-radius:6px;cursor:pointer;">
+        ◀ NAV
+      </button>
       <button id="fsBtn"
         style="background:#3d5a3d;color:#c9a227;border:2px solid #c9a227;
                font-family:Oswald,sans-serif;font-size:0.95rem;letter-spacing:1px;
@@ -115,6 +120,32 @@ def fullscreen_button():
       </button>
     </div>
     <script>
+    // Sidebar open/close arrow
+    const sbtn = document.getElementById("sidebarBtn");
+    let sidebarOpen = true;
+    sbtn.onclick = function() {
+      const sidebar = window.parent.document.querySelector('section[data-testid="stSidebar"]');
+      if (!sidebar) return;
+      if (sidebarOpen) {
+        sidebar.style.setProperty('width', '0px', 'important');
+        sidebar.style.setProperty('min-width', '0px', 'important');
+        sidebar.style.setProperty('max-width', '0px', 'important');
+        sidebar.style.setProperty('overflow', 'hidden', 'important');
+        sidebar.style.setProperty('padding', '0', 'important');
+        sbtn.innerText = "▶ NAV";
+        sidebarOpen = false;
+      } else {
+        sidebar.style.setProperty('width', '', 'important');
+        sidebar.style.setProperty('min-width', '220px', 'important');
+        sidebar.style.setProperty('max-width', '', 'important');
+        sidebar.style.setProperty('overflow', '', 'important');
+        sidebar.style.setProperty('padding', '', 'important');
+        sbtn.innerText = "◀ NAV";
+        sidebarOpen = true;
+      }
+    };
+
+    // Fullscreen (unchanged)
     const btn = document.getElementById("fsBtn");
     btn.onclick = function() {
       const el = window.parent.document.documentElement;
