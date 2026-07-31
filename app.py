@@ -1,4 +1,3 @@
-
 """
 SOLDIER UNPLUGGED | SSB Practice Tool
 PPDT + TAT | Exact Real SSB Timing
@@ -12,6 +11,7 @@ Logic:
   - Sequential, no random repeat
 """
 import streamlit as st
+import streamlit.components.v1 as components
 import time
 import math
 from utils.image_utils import load_ppdt_images, load_tat_images, generate_placeholder
@@ -104,7 +104,6 @@ def reset_timer():
 
 def play_bell():
     st.markdown('<div class="bell">🔔</div>', unsafe_allow_html=True)
-    import streamlit.components.v1 as components
     components.html("""
     <script>
     (function() {
@@ -175,6 +174,112 @@ with st.sidebar:
     st.markdown('<div style="font-size:0.78rem;color:#888;text-align:center;"><b>SOLDIER UNPLUGGED</b><br>by Ayush Kumar</div>', unsafe_allow_html=True)
 
 header()
+
+# Sidebar toggle arrow + Fullscreen / Exit button
+components.html("""
+<script>
+(function() {
+  const doc = window.parent.document;
+
+  // ===== SIDEBAR ARROW TOGGLE =====
+  if (!doc.getElementById('su-sidebar-toggle')) {
+    const btn = doc.createElement('button');
+    btn.id = 'su-sidebar-toggle';
+    const isCollapsed = !!doc.querySelector('[data-testid="collapsedControl"]');
+    btn.innerHTML = isCollapsed ? '▶' : '◀';
+    btn.title = isCollapsed ? 'Open Navigation' : 'Close Navigation';
+    btn.style.cssText = `
+      position: fixed;
+      top: 12px;
+      left: 12px;
+      z-index: 999999;
+      background: linear-gradient(180deg, #3d5a3d, #2a402a);
+      color: #c9a227;
+      border: 2px solid #c9a227;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      font-size: 1.35rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 14px rgba(201,162,39,0.45);
+      padding: 0;
+      line-height: 1;
+    `;
+    btn.onmouseover = function() { this.style.boxShadow = '0 0 20px rgba(201,162,39,0.7)'; };
+    btn.onmouseout  = function() { this.style.boxShadow = '0 0 14px rgba(201,162,39,0.45)'; };
+    btn.onclick = function() {
+      const control = doc.querySelector('[data-testid="collapsedControl"]') ||
+                      doc.querySelector('[data-testid="stSidebarCollapseButton"]');
+      if (control) control.click();
+      if (btn.innerHTML === '◀') {
+        btn.innerHTML = '▶';
+        btn.title = 'Open Navigation';
+      } else {
+        btn.innerHTML = '◀';
+        btn.title = 'Close Navigation';
+      }
+    };
+    doc.body.appendChild(btn);
+  }
+
+  // ===== FULLSCREEN / EXIT BUTTON =====
+  if (!doc.getElementById('su-fs-toggle')) {
+    const fsbtn = doc.createElement('button');
+    fsbtn.id = 'su-fs-toggle';
+    fsbtn.innerHTML = '⛶';
+    fsbtn.title = 'Enter Fullscreen';
+    fsbtn.style.cssText = `
+      position: fixed;
+      top: 12px;
+      right: 12px;
+      z-index: 999999;
+      background: linear-gradient(180deg, #3d5a3d, #2a402a);
+      color: #c9a227;
+      border: 2px solid #c9a227;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      font-size: 1.25rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 14px rgba(201,162,39,0.45);
+      padding: 0;
+      line-height: 1;
+    `;
+    fsbtn.onmouseover = function() { this.style.boxShadow = '0 0 20px rgba(201,162,39,0.7)'; };
+    fsbtn.onmouseout  = function() { this.style.boxShadow = '0 0 14px rgba(201,162,39,0.45)'; };
+    fsbtn.onclick = function() {
+      const d = window.parent.document;
+      if (!d.fullscreenElement) {
+        d.documentElement.requestFullscreen().catch(function(err){ console.log(err); });
+        fsbtn.innerHTML = '✕';
+        fsbtn.title = 'Exit Fullscreen';
+      } else {
+        d.exitFullscreen();
+        fsbtn.innerHTML = '⛶';
+        fsbtn.title = 'Enter Fullscreen';
+      }
+    };
+    // Keep icon in sync if user presses Esc
+    doc.addEventListener('fullscreenchange', function() {
+      if (doc.fullscreenElement) {
+        fsbtn.innerHTML = '✕';
+        fsbtn.title = 'Exit Fullscreen';
+      } else {
+        fsbtn.innerHTML = '⛶';
+        fsbtn.title = 'Enter Fullscreen';
+      }
+    });
+    doc.body.appendChild(fsbtn);
+  }
+})();
+</script>
+""", height=0)
 
 # ═══════════════════════════════════════════════════════════════
 # HOME
