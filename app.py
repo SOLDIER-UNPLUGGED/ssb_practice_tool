@@ -181,6 +181,19 @@ components.html("""
 (function() {
   const doc = window.parent.document;
 
+  // The real Streamlit app (header, sidebar, main content) mounts inside
+  // this container. Requesting fullscreen on THIS element instead of the
+  // whole page means anything outside it — like this hosting page's own
+  // preview toolbar (Share / Star / Edit / GitHub bar up top) — is simply
+  // not part of the fullscreen view and disappears automatically, the same
+  // way fullscreening any single element on a page works.
+  function getFsTarget() {
+    return doc.getElementById('root') ||
+           doc.querySelector('[data-testid="stAppViewContainer"]') ||
+           doc.querySelector('.stApp') ||
+           doc.documentElement;
+  }
+
   // ===== SIDEBAR ARROW TOGGLE =====
   // Streamlit's own collapse control puts data-testid on a wrapper <div>,
   // with the real clickable <button> nested inside it. Newer Streamlit
@@ -206,13 +219,13 @@ components.html("""
     return !!doc.querySelector('[data-testid="collapsedControl"]');
   }
 
-  function refreshIcon(btn) {
+  function refreshSidebarIcon(btn) {
     const collapsed = sidebarIsCollapsed();
     btn.innerHTML = collapsed ? '▶' : '◀';
     btn.title = collapsed ? 'Open Navigation' : 'Close Navigation';
   }
 
-  function ensureToggleButton() {
+  function ensureSidebarToggleButton() {
     let btn = doc.getElementById('su-sidebar-toggle');
     if (!btn) {
       btn = doc.createElement('button');
@@ -243,92 +256,99 @@ components.html("""
         e.preventDefault();
         const real = findRealToggleButton();
         if (real) real.click();
-        setTimeout(function() { refreshIcon(btn); }, 200);
+        setTimeout(function() { refreshSidebarIcon(btn); }, 200);
       };
-      doc.body.appendChild(btn);
     }
-    refreshIcon(btn);
+    // Keep it parked inside the fullscreen target so it stays visible and
+    // clickable whether the app is currently in fullscreen or not.
+    const target = getFsTarget();
+    if (btn.parentElement !== target) target.appendChild(btn);
+    refreshSidebarIcon(btn);
     return btn;
   }
 
-  ensureToggleButton();
+  // ===== FULLSCREEN / EXIT BUTTON =====
+  function refreshFsIcon(btn) {
+    const inFs = !!doc.fullscreenElement;
+    btn.innerHTML = inFs ? '✕' : '⛶';
+    btn.title = inFs ? 'Exit Fullscreen' : 'Enter Fullscreen';
+  }
 
-  // The sidebar may not be mounted yet on first paint (or this script can
-  // fire before Streamlit's own React tree is ready) — retry briefly.
+  function ensureFsButton() {
+    let fsbtn = doc.getElementById('su-fs-toggle');
+    if (!fsbtn) {
+      fsbtn = doc.createElement('button');
+      fsbtn.id = 'su-fs-toggle';
+      fsbtn.style.cssText = `
+        position: fixed;
+        top: 12px;
+        right: 12px;
+        z-index: 999999;
+        background: linear-gradient(180deg, #3d5a3d, #2a402a);
+        color: #c9a227;
+        border: 2px solid #c9a227;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        font-size: 1.25rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 0 14px rgba(201,162,39,0.45);
+        padding: 0;
+        line-height: 1;
+      `;
+      fsbtn.onmouseover = function() { this.style.boxShadow = '0 0 20px rgba(201,162,39,0.7)'; };
+      fsbtn.onmouseout  = function() { this.style.boxShadow = '0 0 14px rgba(201,162,39,0.45)'; };
+      fsbtn.onclick = function() {
+        if (!doc.fullscreenElement) {
+          getFsTarget().requestFullscreen().catch(function(err){ console.log(err); });
+        } else {
+          doc.exitFullscreen();
+        }
+      };
+      // Keep icon in sync whether toggled by this button or Esc key
+      doc.addEventListener('fullscreenchange', function() { refreshFsIcon(fsbtn); });
+    }
+    const target = getFsTarget();
+    if (fsbtn.parentElement !== target) target.appendChild(fsbtn);
+    refreshFsIcon(fsbtn);
+    return fsbtn;
+  }
+
+  function ensureAll() {
+    ensureSidebarToggleButton();
+    ensureFsButton();
+  }
+
+  ensureAll();
+
+  // The app container may not be mounted yet on first paint (or this
+  // script can fire before Streamlit's own React tree is ready) — retry
+  // briefly so both buttons still get attached correctly.
   let tries = 0;
   const retryTimer = setInterval(function() {
     tries++;
-    ensureToggleButton();
+    ensureAll();
     if (tries > 15) clearInterval(retryTimer);
   }, 300);
 
-  // Keep our icon in sync if the sidebar is opened/closed via the native
-  // control (or anything else), throttled to once per animation frame so it
-  // doesn't add overhead during the rapid reruns used by the timers.
+  // Keep everything in sync with the live DOM (sidebar opened/closed
+  // natively, container remounted, etc.), throttled to once per animation
+  // frame so it doesn't add overhead during the rapid reruns used by the
+  // timers.
   let ticking = false;
   const observer = new MutationObserver(function() {
     if (!ticking) {
       ticking = true;
       requestAnimationFrame(function() {
-        ensureToggleButton();
+        ensureAll();
         ticking = false;
       });
     }
   });
   observer.observe(doc.body, { childList: true, subtree: true });
-
-  // ===== FULLSCREEN / EXIT BUTTON =====
-  if (!doc.getElementById('su-fs-toggle')) {
-    const fsbtn = doc.createElement('button');
-    fsbtn.id = 'su-fs-toggle';
-    fsbtn.innerHTML = '⛶';
-    fsbtn.title = 'Enter Fullscreen';
-    fsbtn.style.cssText = `
-      position: fixed;
-      top: 12px;
-      right: 12px;
-      z-index: 999999;
-      background: linear-gradient(180deg, #3d5a3d, #2a402a);
-      color: #c9a227;
-      border: 2px solid #c9a227;
-      border-radius: 50%;
-      width: 40px;
-      height: 40px;
-      font-size: 1.25rem;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 0 14px rgba(201,162,39,0.45);
-      padding: 0;
-      line-height: 1;
-    `;
-    fsbtn.onmouseover = function() { this.style.boxShadow = '0 0 20px rgba(201,162,39,0.7)'; };
-    fsbtn.onmouseout  = function() { this.style.boxShadow = '0 0 14px rgba(201,162,39,0.45)'; };
-    fsbtn.onclick = function() {
-      const d = window.parent.document;
-      if (!d.fullscreenElement) {
-        d.documentElement.requestFullscreen().catch(function(err){ console.log(err); });
-        fsbtn.innerHTML = '✕';
-        fsbtn.title = 'Exit Fullscreen';
-      } else {
-        d.exitFullscreen();
-        fsbtn.innerHTML = '⛶';
-        fsbtn.title = 'Enter Fullscreen';
-      }
-    };
-    // Keep icon in sync if user presses Esc
-    doc.addEventListener('fullscreenchange', function() {
-      if (doc.fullscreenElement) {
-        fsbtn.innerHTML = '✕';
-        fsbtn.title = 'Exit Fullscreen';
-      } else {
-        fsbtn.innerHTML = '⛶';
-        fsbtn.title = 'Enter Fullscreen';
-      }
-    });
-    doc.body.appendChild(fsbtn);
-  }
 })();
 </script>
 """, height=0)
